@@ -27,6 +27,6 @@ def create_event_qr(url, filename="event_qr.png"):
 if __name__ == "__main__":
     # For now, we will use your local Streamlit URL. 
     # Once you deploy the app to the internet, you will replace this with your public link!
-    local_app_url = "http://localhost:8501" 
+    local_app_url = "https://formsusla-xgkd8sjuhhswnxdarnbskh.streamlit.app/" 
     
     create_event_qr(url=local_app_url)
