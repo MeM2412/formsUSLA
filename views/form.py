@@ -21,7 +21,11 @@ with st.form("registration_form"):
     email = st.text_input("Email Address *")
     
     # Phone Number Input formatting instructions: +1234567890
-    phone = st.text_input("Phone Number * (Include country code, e.g., +13055551234)")
+    # Ask for just the 10 digits
+    phone_input = st.text_input("Phone Number *", max_chars=10, placeholder="3055551234")
+    
+    # Automatically format it for Twilio and the database
+    formatted_phone = f"+1{phone_input}" if phone_input else ""
     
     st.write("---")
     st.markdown("📄 [Read our Privacy Policy here](#)") 
@@ -36,13 +40,17 @@ with st.form("registration_form"):
         # Button to trigger the SMS
         send_code_btn = st.form_submit_button("1. Send Verification Code")
         
-        if send_code_btn and phone:
-            result = send_sms_code(phone)
-            if result["success"]:
-                st.session_state.sms_sent = True
-                st.success("Verification code sent! Please check your messages.")
+        if send_code_btn:
+            if not phone_input or len(phone_input) != 10 or not phone_input.isdigit():
+                st.error("Please enter a valid 10-digit phone number without dashes or spaces.")
             else:
-                st.error(f"Failed to send code: {result['message']}")
+                # Use the formatted_phone variable here!
+                result = send_sms_code(formatted_phone)
+                if result["success"]:
+                    st.session_state.sms_sent = True
+                    st.success("Verification code sent! Please check your messages.")
+                else:
+                    st.error(f"Failed to send code: {result['message']}")
         
         # Input field for the 6-digit OTP
         if st.session_state.sms_sent:
@@ -50,7 +58,7 @@ with st.form("registration_form"):
             verify_code_btn = st.form_submit_button("2. Verify Code")
             
             if verify_code_btn and entered_code:
-                check_result = check_sms_code(phone, entered_code)
+                check_result = check_sms_code(formatted_phone, entered_code)
                 if check_result["success"]:
                     st.session_state.phone_verified = True
                     st.success("Phone verified successfully!")
@@ -70,7 +78,7 @@ with st.form("registration_form"):
     submitted = st.form_submit_button("Submit Registration", disabled=submit_disabled, use_container_width=True)
     
     if submitted:
-        if not first_name or not last_name or not phone or not email:
+        if not first_name or not last_name or not formatted_phone or not email:
             st.error("Please fill in all required fields (*).")
         elif not privacy_accepted:
             st.error("You must accept the privacy policy to proceed.")
@@ -79,7 +87,7 @@ with st.form("registration_form"):
                 first_name=first_name, 
                 middle_name=middle_name, 
                 last_name=last_name, 
-                phone=phone, 
+                phone=formatted_phone, 
                 email=email, 
                 privacy_accepted=privacy_accepted
             )

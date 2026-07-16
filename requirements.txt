@@ -4,3 +4,4 @@ streamlit
 pandas
 twilio
 Pillow
+streamlit-autorefresh
