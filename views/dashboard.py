@@ -3,62 +3,96 @@ import pandas as pd
 import os
 from db_logic import get_all_submissions
 from dotenv import load_dotenv
+from streamlit_autorefresh import st_autorefresh
 
 load_dotenv()
 
-st.set_page_config(page_title="Organizer Dashboard", page_icon="📊", layout="wide")
-
-# ---------------------------------------------------------
-# Authentication Routing
-# ---------------------------------------------------------
 expected_password = os.environ.get("ADMIN_PASSWORD")
 
-# Create a password input field
-password_attempt = st.sidebar.text_input("Admin Password", type="password")
-
-if password_attempt != expected_password:
-    st.warning("🔒 Please enter the correct password in the sidebar to access the dashboard.")
-    st.stop() # This prevents the rest of the page from loading
-
 # ---------------------------------------------------------
-# Dashboard Logic (Only runs if password is correct)
+# Authentication (Main Page, No Sidebar)
 # ---------------------------------------------------------
-st.title("Admin: Event Registration Dashboard")
-st.write("Monitor incoming event registrations in real-time.")
+# Remember if the user is logged in across page refreshes
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
 
-# Fetch the data
-result = get_all_submissions()
-
-if result["success"]:
-    data = result["data"]
-    columns = result["columns"]
+if not st.session_state.authenticated:
+    # Centered login form
+    st.write("### 🔒 Organizer Dashboard")
+    st.write("Please enter the admin password to view live registrations.")
     
-    if len(data) > 0:
-        # Convert the raw database rows into a Pandas DataFrame for easy viewing
-        df = pd.DataFrame(data, columns=columns)
+    with st.form("login_form"):
+        password_attempt = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Log In", use_container_width=True)
         
-        # Display high-level metrics
-        st.metric(label="Total Registrations", value=len(df))
-        
-        st.write("### Live Data")
-        # Display the interactive table
-        st.dataframe(df, use_container_width=True)
-        
-        # Convert the dataframe to a CSV format for the export button
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        
-        st.write("---")
-        st.write("### Export Data")
-        # Streamlit's built-in download button for easy Excel/Sheets integration
-        st.download_button(
-            label="📥 Download Data as CSV",
-            data=csv_data,
-            file_name="event_registrations.csv",
-            mime="text/csv"
-        )
-        
-    else:
-        st.info("No registrations have been submitted yet.")
-        
+        if submitted:
+            if password_attempt == expected_password:
+                st.session_state.authenticated = True
+                st.rerun() # Refresh immediately to load the dashboard
+            else:
+                st.error("Incorrect password. Please try again.")
+    
+    # Stop the script here so the data below is completely protected
+    st.stop() 
+
+# ---------------------------------------------------------
+# Dashboard Logic (Only runs if authenticated)
+# ---------------------------------------------------------
+
+# Automatically refresh this page every 10 seconds (10000 milliseconds)
+st_autorefresh(interval=10000, key="data_refresh")
+
+# Header with a Logout button
+col1, col2 = st.columns([8, 2])
+col1.title("Admin Dashboard")
+if col2.button("Logout"):
+    st.session_state.authenticated = False
+    st.rerun()
+
+st.write("🟢 Live view. This page refreshes automatically every 10 seconds.")
+
+# Fetch your data
+raw_data = get_all_submissions()
+
+# Safely extract the list of records depending on how db_logic.py returns it
+if isinstance(raw_data, dict) and "data" in raw_data:
+    df = pd.DataFrame(raw_data["data"])
+elif isinstance(raw_data, dict):
+    # Fallback just in case it's a flat dictionary
+    df = pd.DataFrame([raw_data])
 else:
-    st.error(f"Database Error: {result['message']}")
+    # If it is already a clean list of records
+    df = pd.DataFrame(raw_data)
+
+if not df.empty:
+    st.write("---")
+    st.write("### Recent Registrations")
+    
+    # --- Slim Down the Master Table ---
+    # The column indices you want to hide (0-indexed, so 0 is the first column)
+    indices_to_hide = [0, 2, 6, 7]
+    
+    # Safety check: Only try to drop indices that actually exist in the table
+    valid_indices = [i for i in indices_to_hide if i < len(df.columns)]
+    
+    # Get the actual names of the columns at those positions
+    cols_to_drop = df.columns[valid_indices]
+    
+    # Drop them to create the clean display table
+    display_df = df.drop(columns=cols_to_drop)
+
+    # Display the simplified table without the row index numbers
+    st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+    # The download button always grabs the FULL dataframe (df), not the slimmed down one
+    st.write("---")
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download Full CSV Database",
+        data=csv,
+        file_name='event_registrations.csv',
+        mime='text/csv',
+        use_container_width=True
+    )
+else:
+    st.info("No registrations yet. Waiting for attendees...")
