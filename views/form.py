@@ -8,8 +8,8 @@ if 'sms_sent' not in st.session_state:
 if 'phone_verified' not in st.session_state:
     st.session_state.phone_verified = False
 
-st.title("Event Registration")
-st.write("Please fill out the details below to register for the event.")
+st.title("Get Your Gadget!")
+st.write("Please fill out the details below to get your gadget.")
 
 with st.form("registration_form"):
     st.subheader("Personal Information")
