@@ -66,7 +66,7 @@ def get_all_submissions():
     
     # Retrieve all data ordered by the newest submissions first
     query = """
-        SELECT id, first_name, middle_name, last_name, phone, email, created_at 
+        SELECT id, first_name, middle_name, last_name, phone, email, created_at, gadget_given
         FROM event_submissions 
         ORDER BY created_at DESC;
     """

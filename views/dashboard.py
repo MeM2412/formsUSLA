@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from streamlit_autorefresh import st_autorefresh
 from db_logic import get_all_submissions, update_gadget_status
+from modules import handle_give_gadget
 
 load_dotenv()
 
@@ -94,18 +95,48 @@ if not df.empty:
     # Drop them to create the clean display table
     display_df = df.drop(columns=cols_to_drop)
 
-    # --- Rename Columns for the Dashboard ---
+    # Rename Columns 
     display_df = display_df.rename(columns={
         0: "#",
         1: "First Name",
         3: "Last Name",
         4: "Phone Number",
         5: "Email Address",
-        6: "Date/Time"
+        6: "Date/Time",
+        7: "Gadget Given"
     })
 
     # Display the simplified table without the row index numbersS
     st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+    # Implement the "Give Gadget" Action Button
+    with st.popover("🎁 Give Gadget", use_container_width=True):
+        st.write("**Attendees waiting for a gadget:**")
+        
+        # Filter the original df to find people where column 7 (Gadget Given) is not True
+        pending_users = df[df[7] != True] 
+        
+        if pending_users.empty:
+            st.success("Awesome! Everyone has received their gadget.")
+        else:
+            # Loop through the pending users to create a list with "Give" buttons
+            for index, row in pending_users.iterrows():
+                user_id = row[0]
+                first_name = row[1]
+                last_name = row[3]
+                
+                col1, col2 = st.columns([7, 3])
+                col1.write(f"👤 {first_name} {last_name}")
+                
+                # 3. Use 'on_click' and 'args' instead of checking if the button was clicked
+                col2.button(
+                    label="Give", 
+                    key=f"give_btn_{user_id}", 
+                    type="primary", 
+                    use_container_width=True,
+                    on_click=handle_give_gadget,  # Point to the function
+                    args=(user_id,)               # Hand the function the user_id
+                )
 
     # end of the table
     # The download button always grabs the FULL dataframe (df), not the slimmed down one
