@@ -84,3 +84,24 @@ def get_all_submissions():
     finally:
         cur.close()
         conn.close()
+
+
+def update_gadget_status(user_id, status):
+    """Updates the gadget_given boolean for a specific user."""
+    try:
+        conn = psycopg2.connect(os.environ.get("DB_URL"))
+        cur = conn.cursor()
+        
+        # %s prevents SQL injection attacks
+        cur.execute(
+            "UPDATE event_submission SET gadget_given = %s WHERE id = %s",
+            (status, user_id)
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False

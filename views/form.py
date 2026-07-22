@@ -8,8 +8,8 @@ if 'sms_sent' not in st.session_state:
 if 'phone_verified' not in st.session_state:
     st.session_state.phone_verified = False
 
-st.title("Event Registration")
-st.write("Please fill out the details below to register for the event.")
+st.title("Get Your Gadget!")
+st.write("Please fill out the details below to get your gadget.")
 
 with st.form("registration_form"):
     st.subheader("Personal Information")
@@ -28,7 +28,33 @@ with st.form("registration_form"):
     formatted_phone = f"+1{phone_input}" if phone_input else ""
     
     st.write("---")
-    st.markdown("📄 [Read our Privacy Policy here](#)") 
+    with st.expander("📄 Tap to preview Privacy Policy"):
+        st.markdown(
+"""<div style='font-size: 13px; color: #666666; text-align: justify; line-height: 1.5;'>
+<b>DATA PRIVACY POLICY NOTICE</b><br>
+<i>Effective Date: July 22, 2026</i><br><br>
+
+By accessing, browsing, or submitting information through our forms, you acknowledge and agree to the following terms regarding the collection, use, and processing of your personal information.<br><br>
+
+<b>1. Information We Collect</b><br>
+We collect the personal information you explicitly provide in this form (such as your name, contact details, and any submitted message or responses), as well as standard technical data (such as IP address and browser type) necessary for site security and functionality.<br><br>
+
+<b>2. How We Use Your Data</b><br>
+Your information is used strictly to process your requests, communicate with you regarding your submission, provide requested services, and improve our overall operations and user experience.<br><br>
+
+<b>3. Data Sharing & Protection</b><br>
+We do not sell, rent, or trade your personal data to third parties. We may share your data with trusted service providers solely for the purpose of operating our website and conducting our business, subject to strict confidentiality agreements. We implement industry-standard technical and organizational measures to ensure your data remains secure against unauthorized access.<br><br>
+
+<b>4. Retention of Information</b><br>
+We retain your personal information only for as long as necessary to fulfill the specific purposes for which it was collected, or as required by applicable legal, regulatory, or accounting obligations.<br><br>
+
+<b>5. Your Rights</b><br>
+Depending on your jurisdiction, you have the right to request access to, correction of, or deletion of your personal data. You may also withdraw your consent at any time. To exercise these rights, please contact our support team using the information provided below.<br><br>
+
+</div>""", 
+            unsafe_allow_html=True
+        )
+
     privacy_accepted = st.checkbox("I have read and accept the privacy policy *")
     
     # ---------------------------------------------------------
