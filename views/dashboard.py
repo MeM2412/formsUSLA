@@ -114,7 +114,11 @@ if not df.empty:
         st.write("**Attendees waiting for a gadget:**")
         
         # Filter the original df to find people where column 7 (Gadget Given) is not True
-        pending_users = df[df[7] != True] 
+        # Dynamically find the ID of the last column (Gadget Given)
+        last_col_id = df.columns[-1]
+        
+        # Filter the original df using that dynamic ID
+        pending_users = df[df[last_col_id] != True]
         
         if pending_users.empty:
             st.success("Awesome! Everyone has received their gadget.")
