@@ -2,6 +2,7 @@ import psycopg2
 from psycopg2 import IntegrityError
 import os
 from dotenv import load_dotenv
+import streamlit as st
 
 # This function reads the .env file and loads the variables into the environment
 load_dotenv()
@@ -89,12 +90,15 @@ def get_all_submissions():
 def update_gadget_status(user_id, status):
     """Updates the gadget_given boolean for a specific user."""
     try:
-        conn = psycopg2.connect(os.environ.get("DB_URL"))
+        # 1. Safely check Streamlit secrets first, then fall back to local .env
+        db_url = os.environ.get("DB_URL")
+        
+        conn = psycopg2.connect(db_url)
         cur = conn.cursor()
         
         # %s prevents SQL injection attacks
         cur.execute(
-            "UPDATE event_submission SET gadget_given = %s WHERE id = %s",
+            "UPDATE event_submissions SET gadget_given = %s WHERE id = %s",
             (status, user_id)
         )
         
@@ -102,6 +106,8 @@ def update_gadget_status(user_id, status):
         cur.close()
         conn.close()
         return True
+    
     except Exception as e:
-        print(f"Database error: {e}")
+        # 2. Push the exact error to the UI so you can actually see it!
+        st.error(f"⚠️ SQL Error: {e}")
         return False
