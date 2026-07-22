@@ -66,7 +66,7 @@ def get_all_submissions():
     
     # Retrieve all data ordered by the newest submissions first
     query = """
-        SELECT id, first_name, middle_name, last_name, phone, email, phone_verified, email_verified, created_at 
+        SELECT id, first_name, middle_name, last_name, phone, email, created_at 
         FROM event_submissions 
         ORDER BY created_at DESC;
     """
@@ -84,3 +84,24 @@ def get_all_submissions():
     finally:
         cur.close()
         conn.close()
+
+
+def update_gadget_status(user_id, status):
+    """Updates the gadget_given boolean for a specific user."""
+    try:
+        conn = psycopg2.connect(os.environ.get("DB_URL"))
+        cur = conn.cursor()
+        
+        # %s prevents SQL injection attacks
+        cur.execute(
+            "UPDATE event_submission SET gadget_given = %s WHERE id = %s",
+            (status, user_id)
+        )
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False

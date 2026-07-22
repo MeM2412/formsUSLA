@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import os
-from db_logic import get_all_submissions
 from dotenv import load_dotenv
 from streamlit_autorefresh import st_autorefresh
+from db_logic import get_all_submissions, update_gadget_status
 
 load_dotenv()
 
@@ -49,10 +49,22 @@ if col2.button("Logout"):
     st.session_state.authenticated = False
     st.rerun()
 
-st.write("🟢 Live view. This page refreshes automatically every 10 seconds.")
-
 # Fetch your data
 raw_data = get_all_submissions()
+
+# Safely count the records based on how the database returns them
+if isinstance(raw_data, dict) and "data" in raw_data:
+    total_users = len(raw_data["data"])
+elif isinstance(raw_data, list):
+    total_users = len(raw_data)
+else:
+    total_users = 0
+
+# Use columns to keep the little square compact on the left side
+col1, col2, col3 = st.columns([1, 1, 2])
+col1.metric("Registered Attendees", total_users)
+
+#-------
 
 # Safely extract the list of records depending on how db_logic.py returns it
 if isinstance(raw_data, dict) and "data" in raw_data:
@@ -64,13 +76,14 @@ else:
     # If it is already a clean list of records
     df = pd.DataFrame(raw_data)
 
+# DF
 if not df.empty:
     st.write("---")
     st.write("### Recent Registrations")
     
     # --- Slim Down the Master Table ---
     # The column indices you want to hide (0-indexed, so 0 is the first column)
-    indices_to_hide = [0, 2, 6, 7]
+    indices_to_hide = [0, 2]
     
     # Safety check: Only try to drop indices that actually exist in the table
     valid_indices = [i for i in indices_to_hide if i < len(df.columns)]
@@ -81,9 +94,20 @@ if not df.empty:
     # Drop them to create the clean display table
     display_df = df.drop(columns=cols_to_drop)
 
-    # Display the simplified table without the row index numbers
+    # --- Rename Columns for the Dashboard ---
+    display_df = display_df.rename(columns={
+        0: "#",
+        1: "First Name",
+        3: "Last Name",
+        4: "Phone Number",
+        5: "Email Address",
+        6: "Date/Time"
+    })
+
+    # Display the simplified table without the row index numbersS
     st.dataframe(display_df, hide_index=True, use_container_width=True)
 
+    # end of the table
     # The download button always grabs the FULL dataframe (df), not the slimmed down one
     st.write("---")
     csv = df.to_csv(index=False).encode('utf-8')
